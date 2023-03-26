@@ -2,8 +2,7 @@
 Processador de comandos do Linux desenvolvido em C.
 
 
-Alunos: João Robiatti
-        Murilo Bell
+Alunos: João Robiatti & Murilo Bell
         
 Prof.: Bionda Rozin
 
