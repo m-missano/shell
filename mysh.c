@@ -3,15 +3,27 @@
 #include <stdbool.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/utsname.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
 
 #define LINE_SIZE 10000
 
+extern char** environ;
+
+char* getCurrentDirectory(){
+	// TODO Implementar o getCurrentDirectory
+	char* directory = getenv("PWD");
+
+	return directory;
+}
+
 void type_prompt(){
-	// ! verificar como pegar o nome do usuario
-	printf("[MySh] nome-de-usuario@hospedeiro:diretorio-atual$ ");
+	struct utsname uts;
+	uname(&uts);
+	// TODO Alterar o host e o path
+	printf("[MySh] %s@%s:%s$ ", getenv("USER"), uts.nodename, getCurrentDirectory());
 }
 
 char** format_text_line(char *text){
