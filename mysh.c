@@ -47,13 +47,23 @@ char** format_text_line(char *text){
 pid_t spawn(char* program, char** arglist){
 	pid_t child_pid = fork();
 
-	if(child_pid != 0){
-		return child_pid;
-	}
-	else{
+	if(child_pid == 0){
 		execvp(program, arglist);
-		abort();
-	}
+		printf("%s: comando não encontrado\n",program);
+		exit(127);
+	} else {
+        int child_status;
+        waitpid(child_pid, &child_status, 0);
+
+        if (WIFEXITED(child_status)) {
+            int exit_status = WEXITSTATUS(child_status);
+            if (exit_status != 0) {
+                printf("O processo filho terminou com um status de saída anormal: %d\n", exit_status);
+            }
+        } else {
+            printf("O processo filho terminou de forma anormal.\n");
+        }
+    }
 
 }
 
@@ -61,42 +71,41 @@ int main(int argc, char* argv){
 	
 	char text_line[LINE_SIZE];
 	//char *test[] ={"ls", "-l", NULL};
-	int child_status;
 	int i;
 
 	while(true){ 
 		// printa a config inicial do prompt
 		type_prompt();	       
 		// recebe o comando digitado pelo usuario
-		fgets(text_line, LINE_SIZE, stdin);
+		if (fgets(text_line, LINE_SIZE, stdin) == NULL) {
+			printf("exit\n");
+			exit(0);
+		}
 		// printa o comando digitado
 		text_line[strlen(text_line)-1] = '\0';
 
 		char** args_list = format_text_line(text_line);
 
-		if(strcmp(args_list[0], "help") == 0){
-			//print_usage
-		}
-		else if(strcmp(args_list[0], "cd") == 0){
-			//change_directory(params)  
-		}
-		else if(strcmp(args_list[0], "exit") == 0){ // sai do programa se receber o comando exit
-			break;
-		}	
-		else{ // comando externo
-			spawn(args_list[0], args_list); 
+		if(args_list[0] != NULL){
 
-			// espera o processo filho encerrar
-			wait(&child_status);
-			if(!WIFEXITED(child_status)){
-				printf("O processo filho terminou anormalmente\n");
+			if(strcmp(args_list[0], "help") == 0){
+				//print_usage
 			}
+			else if(strcmp(args_list[0], "cd") == 0){
+				//change_directory(params)  
+			}
+			else if(strcmp(args_list[0], "exit") == 0){ // sai do programa se receber o comando exit
+				break;
+			}	
+			else{ // comando externo
+				spawn(args_list[0], args_list); 
+			}
+			
+			for (i=0; args_list[i] != NULL; i++) {
+				free(args_list[i]);
+			}
+			free(args_list);
 		}
-		
-		for (i=0; args_list[i] != NULL; i++) {
-    		free(args_list[i]);
-		}
-		free(args_list);
 	}
 
 	return 0;
