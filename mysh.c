@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+// TODO: (se necessario): verificar PWD apos alterar de diretorio
 
 #define LINE_SIZE 10000
 
