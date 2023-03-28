@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
 #include <sys/wait.h>
@@ -84,6 +85,15 @@ char** format_text_line(char *text){
 	return args_list;
 }
 
+void ignore_signal(int signum) {
+    struct sigaction action;
+
+    action.sa_handler = SIG_IGN;
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = 0;
+    sigaction(signum, &action, NULL);
+}
+
 pid_t spawn(char* program, char** arglist){
 	pid_t child_pid = fork();
 
@@ -108,13 +118,12 @@ pid_t spawn(char* program, char** arglist){
 }
 
 int main(int argc, char* argv){
-	
 	char text_line[LINE_SIZE];
-	//char *test[] ={"ls", "-l", NULL};
 	int i;
 
 	char* current_dir = getCurrentDirectory();
-
+	ignore_signal(SIGTSTP);
+	ignore_signal(SIGINT);
 	while(true){ 
 		// printa a config inicial do prompt
 		type_prompt(current_dir);	       
