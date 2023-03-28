@@ -2,4 +2,6 @@ mysh
 shell
 teste.c
 pipe.c
+pipe*.c
+!pipetest.c
 

@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 // TODO: (se necessario): verificar PWD apos alterar de diretorio
+// ! Arrumar os printf (stderr, stdout)
 
 #define LINE_SIZE 10000
 
@@ -27,7 +28,9 @@ void format_dir(char* directory){
 }
 
 char* getCurrentDirectory(){
-	char* directory = getenv("PWD");
+	char* aux = getenv("PWD");
+	char* directory = (char*)malloc(1024);
+	strcpy(directory, aux);
 	format_dir(directory);
 	return directory;
 }
