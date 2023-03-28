@@ -12,25 +12,58 @@
 
 extern char** environ;
 
-char* getCurrentDirectory(){
-	char* directory = getenv("PWD");
+void format_dir(char* directory){
 	char* home = getenv("HOME");
     int home_len = strlen(home);
 
-	//verifica se o diretório atual começa com '/home/user' e se o próximo caractere é '/'
-    if (strncmp(directory, home, home_len) == 0 && directory[home_len] == '/') {
+	//verifica se o diretório atual começa com '/home/user'
+    if (strncmp(directory, home, home_len) == 0) {
         directory[0] = '~';
         memmove(&directory[1], &directory[home_len], strlen(directory) - home_len + 1); 
 		//move para o endereço após '~', o diretório após o caminho de home 
     }
+}
 
+char* getCurrentDirectory(){
+	char* directory = getenv("PWD");
+	format_dir(directory);
 	return directory;
 }
 
-void type_prompt(){
+void type_prompt(char* current_dir){
 	struct utsname uts;
 	uname(&uts);
-	printf("[MySh] %s@%s:%s$ ", getenv("USER"), uts.nodename, getCurrentDirectory());
+	printf("[MySh] %s@%s:%s$ ", getenv("USER"), uts.nodename, current_dir);
+}
+
+void change_directory(char** arglist, char** current_dir){
+	char* path = NULL;
+    char* home = getenv("HOME");
+    char new_dir[1024];
+
+    if (arglist[1] != NULL) {
+        path = arglist[1];
+    }
+    else {
+        path = home;
+    }
+
+	if (strcmp(path, "~") == 0) {
+		path = home;
+	}
+
+	int ret = chdir(path);
+	if (ret != 0){
+		fprintf(stderr,"bash: cd: %s: No such file or directory\n", path);
+		return;
+	}
+
+	if (getcwd(new_dir, sizeof(new_dir)) != NULL) {
+		//free(current_directory);
+		format_dir(new_dir);
+		*current_dir = strdup(new_dir); 
+	}
+	//TODO: tratar caso getwcd não funcione.
 }
 
 char** format_text_line(char *text){
@@ -80,9 +113,11 @@ int main(int argc, char* argv){
 	//char *test[] ={"ls", "-l", NULL};
 	int i;
 
+	char* current_dir = getCurrentDirectory();
+
 	while(true){ 
 		// printa a config inicial do prompt
-		type_prompt();	       
+		type_prompt(current_dir);	       
 		// recebe o comando digitado pelo usuario
 		if (fgets(text_line, LINE_SIZE, stdin) == NULL) {
 			printf("exit\n");
@@ -99,7 +134,7 @@ int main(int argc, char* argv){
 				//print_usage
 			}
 			else if(strcmp(args_list[0], "cd") == 0){
-				//change_directory(args_list);
+				change_directory(args_list, &current_dir);
 			}
 			else if(strcmp(args_list[0], "exit") == 0){ // sai do programa se receber o comando exit
 				break;
