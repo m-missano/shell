@@ -13,8 +13,16 @@
 extern char** environ;
 
 char* getCurrentDirectory(){
-	// TODO Implementar o getCurrentDirectory
 	char* directory = getenv("PWD");
+	char* home = getenv("HOME");
+    int home_len = strlen(home);
+
+	//verifica se o diretório atual começa com '/home/user' e se o próximo caractere é '/'
+    if (strncmp(directory, home, home_len) == 0 && directory[home_len] == '/') {
+        directory[0] = '~';
+        memmove(&directory[1], &directory[home_len], strlen(directory) - home_len + 1); 
+		//move para o endereço após '~', o diretório após o caminho de home 
+    }
 
 	return directory;
 }
@@ -22,7 +30,6 @@ char* getCurrentDirectory(){
 void type_prompt(){
 	struct utsname uts;
 	uname(&uts);
-	// TODO Alterar o host e o path
 	printf("[MySh] %s@%s:%s$ ", getenv("USER"), uts.nodename, getCurrentDirectory());
 }
 
@@ -49,7 +56,7 @@ pid_t spawn(char* program, char** arglist){
 
 	if(child_pid == 0){
 		execvp(program, arglist);
-		printf("%s: comando não encontrado\n",program);
+		fprintf(stderr,"%s: comando não encontrado\n",program);
 		exit(127);
 	} else {
         int child_status;
@@ -92,7 +99,7 @@ int main(int argc, char* argv){
 				//print_usage
 			}
 			else if(strcmp(args_list[0], "cd") == 0){
-				//change_directory(params)  
+				//change_directory(args_list);
 			}
 			else if(strcmp(args_list[0], "exit") == 0){ // sai do programa se receber o comando exit
 				break;
