@@ -15,6 +15,15 @@
 
 extern char** environ;
 
+struct command {
+	char **argv;
+};
+
+struct command_list {
+    struct command *commands;
+    int count;
+};
+
 void format_dir(char* directory){
 	char* home = getenv("HOME");
     int home_len = strlen(home);
@@ -71,22 +80,38 @@ void change_directory(char** arglist, char** current_dir){
 	//TODO: tratar caso getwcd não funcione.
 }
 
-char** format_text_line(char *text){
-	int i = 0;
-	char* word;
-	char** args_list = (char **) malloc(sizeof(char*) * 20); 
-	const char delimiter[2] = " ";
-	//separa utilizando o delimitador " ", pegando o primeiro token
-	word = strtok(text, delimiter);
+struct command_list* format_text_line(char *text_line) {
+    struct command_list *cmd_list = malloc(sizeof(struct command_list));
+    cmd_list->commands = malloc(sizeof(struct command) * 20);
+    cmd_list->count = 0;
+
+    const char delimiter[3] = " \n";
+    char* word = strtok(text_line, delimiter);
+    struct command current_cmd;
+    current_cmd.argv = malloc(sizeof(char*) * 20);
+    int arg_count = 0;
 	
 	while (word != NULL) {
-		args_list[i] = strdup(word);
-		i++;
-		word = strtok(NULL, delimiter);
-	}
-	args_list[i] = NULL;
+        if (strcmp(word, "|") == 0) {
+            current_cmd.argv[arg_count] = NULL;
+            cmd_list->commands[cmd_list->count] = current_cmd;
+            cmd_list->count++;
 
-	return args_list;
+            current_cmd.argv = malloc(sizeof(char*) * 20);
+            arg_count = 0;
+        } else {
+            current_cmd.argv[arg_count] = strdup(word);
+            arg_count++;
+        }
+
+        word = strtok(NULL, delimiter);
+    }
+
+    current_cmd.argv[arg_count] = NULL;
+    cmd_list->commands[cmd_list->count] = current_cmd;
+    cmd_list->count++;
+
+    return cmd_list;
 }
 
 void ignore_signal(int signum) {
@@ -121,6 +146,46 @@ pid_t spawn(char* program, char** arglist){
 
 }
 
+pid_t spawn_proc (int in, int out, struct command *cmd){
+  	pid_t pid;
+
+  	if ((pid = fork ()) == 0){
+      	if (in != 0){
+			dup2 (in, 0);
+			close (in);
+        }
+
+      	if (out != 1){
+			dup2 (out, 1);
+			close (out);
+        }
+
+      return execvp (cmd->argv [0], (char * const *)cmd->argv);
+    }
+
+  return pid;
+}
+
+void fork_pipes (int n, struct command *cmd){
+	int i;
+	pid_t pid;
+	int in, fd [2];
+	
+	in = 0;
+
+	for (i = 0; i < n - 1; ++i){
+		pipe (fd);
+		spawn_proc (in, fd [1], cmd + i);
+		close (fd [1]);
+		in = fd [0];
+	}
+
+	if (in != 0)
+		dup2 (in, 0);
+
+	execvp (cmd [i].argv [0], (char * const *)cmd [i].argv);
+}
+
 int main(int argc, char* argv){
 	char text_line[LINE_SIZE];
 	int i;
@@ -139,27 +204,31 @@ int main(int argc, char* argv){
 		// printa o comando digitado
 		text_line[strlen(text_line)-1] = '\0';
 
-		char** args_list = format_text_line(text_line);
+		struct command_list *cmd_list = format_text_line(text_line);
 
-		if(args_list[0] != NULL){
+		if(cmd_list->commands[0].argv != NULL){
 
-			if(strcmp(args_list[0], "help") == 0){
+			if(strcmp(cmd_list->commands[0].argv[0], "help") == 0){
 				//print_usage
 			}
-			else if(strcmp(args_list[0], "cd") == 0){
-				change_directory(args_list, &current_dir);
+			else if(strcmp(cmd_list->commands[0].argv[0], "cd") == 0){
+				change_directory(cmd_list->commands[0].argv, &current_dir);
 			}
-			else if(strcmp(args_list[0], "exit") == 0){ // sai do programa se receber o comando exit
+			else if(strcmp(cmd_list->commands[0].argv[0], "exit") == 0){ // sai do programa se receber o comando exit
 				break;
 			}	
-			else{ // comando externo
-				spawn(args_list[0], args_list); 
+			else if(cmd_list->count > 1){ // pipe
+				fork_pipes (cmd_list->count, cmd_list->commands);
+			}
+			else{ // comando externo sem pipe
+				spawn(cmd_list->commands[0].argv[0], cmd_list->commands[0].argv);
 			}
 			
-			for (i=0; args_list[i] != NULL; i++) {
-				free(args_list[i]);
+			for (int i = 0; i < cmd_list->count; i++) {
+    			free(cmd_list->commands[i].argv);
 			}
-			free(args_list);
+			free(cmd_list->commands);
+			free(cmd_list);
 		}
 	}
 
