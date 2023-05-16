@@ -1,3 +1,11 @@
+/***********************
+* Nome:                         Email:
+* João Vitor Robiatti Amorim    joao.robiatti@unesp.br
+* Murilo Missano Bell           murilo.bell@unesp.br 
+*
+*
+***********************/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -98,26 +106,28 @@ void change_directory(char** arglist, char** current_dir){
 }
 
 /* formata a linha de texto do terminal em uma lista de comandos.
-Retorna um ponteiro com a copia formatada da linha do texto com espaços adicionados antes e depois de "|",
-possibilitando leitura de pipe sem espaço entre si.
+Copia a nova linha formatada com espaços adicionados antes e depois de "|",
+possibilitando leitura de pipe sem espaço entre si para o argumento passado em text_line.
 @param text_line: ponteiro para um array de caracteres com a linha do texto
 */
-
 void swap(char *text_line) {
     int pipe_count = 0;
     int length = strlen(text_line);
     int i, j;
 
+	// Conta a quantidade de pipes na linha
     for (i = 0; i < length; i++) {
         if (text_line[i] == '|') {
             pipe_count++;
         }
     }
 
+	// Alocacao de new_line
     int new_length = length + (pipe_count * 2);
     char *new_text_line = (char *)malloc((new_length + 1) * sizeof(char));
 
     j = 0;
+	// Reescreve a linha adicionando espacos antes e depois de pipes, garantido os delimitadores para o strtok
     for (i = 0; i < length; i++) {
         if (text_line[i] == '|') {
             new_text_line[j] = ' ';
@@ -129,11 +139,14 @@ void swap(char *text_line) {
             j++;
         }
     }
+	// Adiciona o caracter de EOF
     new_text_line[j] = '\0';
 
+	// Copia para a nova linha para text_line e desaloca-a
     strcpy(text_line, new_text_line);
     free(new_text_line);
 }
+
 /* formata a linha de texto do terminal em uma lista de comandos.
 Retorna um ponteiro para uma estrutura command_list que contém uma
 matriz de estruturas command.
@@ -329,7 +342,12 @@ int main(int argc, char* argv){
 		if(cmd_list->commands[0].argv[0] != NULL){
 
 			if(strcmp(cmd_list->commands[0].argv[0], "help") == 0){
-				//print_usage
+				fprintf(stdout, "- cd: Altera o diretório atual para o diretório especificado.");
+				fprintf(stdout, "\n  Uso: cd <diretório>\n\n");
+				fprintf(stdout, "- exit: Encerra o programa.");
+				fprintf(stdout, "\n  Uso: exit ou CTRL + D\n\n");
+				fprintf(stdout, "- help: Exibe uma lista dos comandos disponíveis e sua descrição.");
+				fprintf(stdout, "\n  Uso: help\n\n");
 			}
 			else if(strcmp(cmd_list->commands[0].argv[0], "cd") == 0){
 				change_directory(cmd_list->commands[0].argv, &current_dir);
@@ -352,6 +370,5 @@ int main(int argc, char* argv){
 			fflush(stdin);
 		}
 	}
-
 	return 0;
 }
