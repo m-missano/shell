@@ -8,9 +8,6 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
-// TODO: (se necessario): verificar PWD apos alterar de diretorio
-// ! Arrumar os printf (stderr, stdout) (FEITO)
-
 #define LINE_SIZE 10000
 
 extern char** environ;
@@ -104,45 +101,39 @@ void change_directory(char** arglist, char** current_dir){
 Retorna um ponteiro com a copia formatada da linha do texto com espaços adicionados antes e depois de "|",
 possibilitando leitura de pipe sem espaço entre si.
 @param text_line: ponteiro para um array de caracteres com a linha do texto
-@return char* copy: ponteiro com a copia formatada da linha do texto
 */
 
-char* swap(char *text_line){
- 
-    char c = 0;
-	int pipe_count = 0;
-    int length = 0, i = 0, j = 0, length_copy = 0;
+void swap(char *text_line) {
+    int pipe_count = 0;
+    int length = strlen(text_line);
+    int i, j;
 
-    length = strlen(text_line);
-
-	for (i = 0; i < length; i ++) {
-		c = text_line[i];
-		if (c == '|'){
-			pipe_count+=1;
-		}
-    }
- 
-	length_copy = strlen(text_line) + pipe_count*2;
-
-	char *copy = (char*)malloc(sizeof(length_copy));
-	
-	for (i = 0; i < length; i ++) {
-		c = text_line[i];
-		if (c == '|'){
-			copy[j] = ' ';
-			copy[j + 1] = '|';
-			copy[j + 2] = ' ';
-			j+=3;
-		}
-		else{
-			copy[j] = c;
-			j++;
-		}
+    for (i = 0; i < length; i++) {
+        if (text_line[i] == '|') {
+            pipe_count++;
+        }
     }
 
-	return copy;
+    int new_length = length + (pipe_count * 2);
+    char *new_text_line = (char *)malloc((new_length + 1) * sizeof(char));
+
+    j = 0;
+    for (i = 0; i < length; i++) {
+        if (text_line[i] == '|') {
+            new_text_line[j] = ' ';
+            new_text_line[j + 1] = '|';
+            new_text_line[j + 2] = ' ';
+            j += 3;
+        } else {
+            new_text_line[j] = text_line[i];
+            j++;
+        }
+    }
+    new_text_line[j] = '\0';
+
+    strcpy(text_line, new_text_line);
+    free(new_text_line);
 }
-
 /* formata a linha de texto do terminal em uma lista de comandos.
 Retorna um ponteiro para uma estrutura command_list que contém uma
 matriz de estruturas command.
@@ -152,7 +143,7 @@ struct command_list* format_text_line(char *text_line) {
     cmd_list->commands = malloc(sizeof(struct command) * 20);
     cmd_list->count = 0;
 
-	text_line = swap(text_line);
+	swap(text_line);
     const char delimiter[2] = " ";
 	// separa a linha de texto recebida como parâmetro em palavras, usando o delimitador " ".
     char* word = strtok(text_line, delimiter);
@@ -359,7 +350,6 @@ int main(int argc, char* argv){
 			free(cmd_list->commands);
 			free(cmd_list);
 			fflush(stdin);
-			free(text_line);
 		}
 	}
 
